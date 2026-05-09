@@ -20,10 +20,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'update_gmail' && !isAdmin()) {
         $gmail = trim($_POST['gmail'] ?? '');
         if (!isValidGmail($gmail)) {
-            $errors[] = 'กรุณากรอก Gmail ให้ถูกต้อง เช่น name@gmail.com';
+            $errors[] = tt('กรุณากรอก Gmail ให้ถูกต้อง เช่น name@gmail.com', 'Please enter a valid Gmail address, such as name@gmail.com.');
         } else {
             $pdo->prepare("UPDATE users SET gmail = ? WHERE id = ?")->execute([$gmail, $_SESSION['user_id']]);
-            $_SESSION['flash'] = 'บันทึกและล็อก Gmail เรียบร้อยแล้ว';
+            $_SESSION['flash'] = tt('บันทึกและล็อก Gmail เรียบร้อยแล้ว', 'Gmail saved and locked.');
             header('Location: account.php');
             exit;
         }
@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'remove_gmail' && !isAdmin()) {
         $pdo->prepare("UPDATE users SET gmail = NULL WHERE id = ?")->execute([$_SESSION['user_id']]);
-        $_SESSION['flash'] = 'ลบ Gmail ออกจากบัญชีเรียบร้อยแล้ว';
+        $_SESSION['flash'] = tt('ลบ Gmail ออกจากบัญชีเรียบร้อยแล้ว', 'Gmail removed from your account.');
         header('Location: account.php');
         exit;
     }
@@ -46,15 +46,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hash = (string)$stmt->fetchColumn();
 
         if (!password_verify($oldPassword, $hash)) {
-            $errors[] = 'รหัสผ่านเก่าไม่ถูกต้อง';
+            $errors[] = tt('รหัสผ่านเก่าไม่ถูกต้อง', 'The current password is incorrect.');
         } elseif (strlen($newPassword) < 6) {
-            $errors[] = 'รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร';
+            $errors[] = tt('รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร', 'The new password must be at least 6 characters.');
         } elseif ($newPassword !== $confirmPassword) {
-            $errors[] = 'รหัสผ่านใหม่ไม่ตรงกัน';
+            $errors[] = tt('รหัสผ่านใหม่ไม่ตรงกัน', 'The new passwords do not match.');
         } else {
             $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
             $pdo->prepare("UPDATE users SET password = ? WHERE id = ?")->execute([$newHash, $_SESSION['user_id']]);
-            $_SESSION['flash'] = 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว';
+            $_SESSION['flash'] = tt('เปลี่ยนรหัสผ่านเรียบร้อยแล้ว', 'Password changed successfully.');
             header('Location: account.php');
             exit;
         }
@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete_self' && !isAdmin()) {
         $confirmText = trim($_POST['confirm_text'] ?? '');
         if ($confirmText !== 'DELETE') {
-            $errors[] = 'กรุณาพิมพ์ DELETE เพื่อยืนยันการลบบัญชี';
+            $errors[] = tt('กรุณาพิมพ์ DELETE เพื่อยืนยันการลบบัญชี', 'Please type DELETE to confirm account deletion.');
         } else {
             $pdo->prepare("DELETE FROM users WHERE id = ?")->execute([$_SESSION['user_id']]);
             session_destroy();
@@ -79,17 +79,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $gmailValue = $gmail === '' ? null : $gmail;
 
         if ($userId <= 0 || $username === '') {
-            $errors[] = 'ข้อมูลผู้ใช้ไม่ถูกต้อง';
+            $errors[] = tt('ข้อมูลผู้ใช้ไม่ถูกต้อง', 'Invalid user information.');
         } elseif ($gmailValue !== null && !isValidGmail($gmailValue)) {
-            $errors[] = 'Gmail ของผู้ใช้ไม่ถูกต้อง';
+            $errors[] = tt('Gmail ของผู้ใช้ไม่ถูกต้อง', 'The user Gmail address is invalid.');
         } else {
             try {
                 $pdo->prepare("UPDATE users SET username = ?, gmail = ? WHERE id = ?")->execute([$username, $gmailValue, $userId]);
-                $_SESSION['flash'] = 'แก้ไขบัญชีผู้ใช้เรียบร้อยแล้ว';
+                $_SESSION['flash'] = tt('แก้ไขบัญชีผู้ใช้เรียบร้อยแล้ว', 'User account updated.');
                 header('Location: account.php');
                 exit;
             } catch (PDOException $e) {
-                $errors[] = 'ชื่อผู้ใช้นี้ถูกใช้งานแล้ว';
+                $errors[] = tt('ชื่อผู้ใช้นี้ถูกใช้งานแล้ว', 'This username is already taken.');
             }
         }
     }
@@ -97,10 +97,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'admin_delete_user' && isAdmin()) {
         $userId = (int)($_POST['user_id'] ?? 0);
         if ($userId === (int)$_SESSION['user_id']) {
-            $errors[] = 'ไม่สามารถลบบัญชี admin ที่กำลังใช้งานอยู่ได้';
+            $errors[] = tt('ไม่สามารถลบบัญชี admin ที่กำลังใช้งานอยู่ได้', 'You cannot delete the admin account currently in use.');
         } elseif ($userId > 0) {
             $pdo->prepare("DELETE FROM users WHERE id = ? AND username <> 'admin'")->execute([$userId]);
-            $_SESSION['flash'] = 'ลบบัญชีผู้ใช้เรียบร้อยแล้ว';
+            $_SESSION['flash'] = tt('ลบบัญชีผู้ใช้เรียบร้อยแล้ว', 'User account deleted.');
             header('Location: account.php');
             exit;
         }
@@ -134,22 +134,20 @@ if (isAdmin()) {
     )->fetchAll();
 }
 
-renderHeader('จัดการบัญชี');
+renderHeader(t('manage_account'));
 ?>
 </head>
 <body>
 <nav class="<?= isAdmin() ? '' : 'user-nav' ?>">
   <a class="nav-brand" href="../books/index.php"><span class="logo-mark">B</span> BookShelf</a>
   <span class="nav-user"><?= htmlspecialchars($_SESSION['username']) ?></span>
-  <a class="nav-link" href="../books/index.php">คลังหนังสือ</a>
-  <?php if (!isAdmin()): ?>
-    <button class="nav-link" type="button" data-modal-open="passwordModal">เปลี่ยนรหัสผ่าน</button>
-  <?php endif; ?>
-  <a class="nav-link" href="logout.php">ออกจากระบบ</a>
+  <?php renderLanguageSwitch(); ?>
+  <a class="nav-link" href="../books/index.php"><?= htmlspecialchars(t('bookshelf')) ?></a>
+  <a class="nav-link" href="logout.php"><?= htmlspecialchars(t('logout')) ?></a>
 </nav>
 
 <div class="container user-shell">
-  <h2>จัดการบัญชี</h2>
+  <h2><?= htmlspecialchars(t('manage_account')) ?></h2>
 
   <?php if ($flash): ?>
     <div class="alert alert-success"><?= htmlspecialchars($flash) ?></div>
@@ -161,16 +159,16 @@ renderHeader('จัดการบัญชี');
   <?php if (isAdmin()): ?>
     <div class="card">
       <div class="toolbar">
-        <h3 style="margin:0; margin-right:auto">บัญชีผู้ใช้ทั้งหมด</h3>
+        <h3 style="margin:0; margin-right:auto"><?= htmlspecialchars(t('all_users')) ?></h3>
       </div>
       <table>
         <thead>
           <tr>
-            <th>ผู้ใช้</th>
+            <th><?= htmlspecialchars(t('user')) ?></th>
             <th>Gmail</th>
-            <th>กำลังยืม</th>
-            <th>สมัครเมื่อ</th>
-            <th>จัดการ</th>
+            <th><?= htmlspecialchars(t('active_loans')) ?></th>
+            <th><?= htmlspecialchars(t('joined_at')) ?></th>
+            <th><?= htmlspecialchars(t('actions')) ?></th>
           </tr>
         </thead>
         <tbody>
@@ -181,7 +179,7 @@ renderHeader('จัดการบัญชี');
                   <input type="hidden" name="action" value="admin_update_user">
                   <input type="hidden" name="user_id" value="<?= (int)$row['id'] ?>">
                   <div>
-                    <label>ชื่อผู้ใช้</label>
+                    <label><?= htmlspecialchars(t('username')) ?></label>
                     <input type="text" name="username" value="<?= htmlspecialchars($row['username']) ?>" <?= $row['username'] === 'admin' ? 'readonly' : '' ?>>
                   </div>
                   <div>
@@ -189,17 +187,17 @@ renderHeader('จัดการบัญชี');
                     <input type="email" name="gmail" value="<?= htmlspecialchars($row['gmail'] ?? '') ?>" placeholder="name@gmail.com">
                   </div>
                   <div>
-                    <label>กำลังยืม</label>
-                    <div class="locked-field"><?= (int)$row['active_loans'] ?> รายการ</div>
+                    <label><?= htmlspecialchars(t('active_loans')) ?></label>
+                    <div class="locked-field"><?= (int)$row['active_loans'] ?> <?= htmlspecialchars(t('items')) ?></div>
                   </div>
                   <div>
-                    <label>สมัครเมื่อ</label>
+                    <label><?= htmlspecialchars(t('joined_at')) ?></label>
                     <div class="locked-field"><?= htmlspecialchars($row['created_at']) ?></div>
                   </div>
                   <div style="grid-column:1 / -1; display:flex; gap:8px; flex-wrap:wrap">
-                    <button class="btn-add" type="submit">บันทึกบัญชี</button>
+                    <button class="btn-add" type="submit"><?= htmlspecialchars(t('save_account')) ?></button>
                     <?php if ($row['username'] !== 'admin'): ?>
-                      <button class="btn-add btn-danger" type="submit" name="action" value="admin_delete_user" onclick="return confirm('ยืนยันลบบัญชี <?= addslashes(htmlspecialchars($row['username'])) ?> ?')">ลบบัญชี</button>
+                      <button class="btn-add btn-danger" type="submit" name="action" value="admin_delete_user" onclick="return confirm('<?= addslashes(htmlspecialchars(t('confirm_delete_account'))) ?> <?= addslashes(htmlspecialchars($row['username'])) ?> ?')"><?= htmlspecialchars(t('delete_account')) ?></button>
                     <?php endif; ?>
                   </div>
                 </form>
@@ -212,74 +210,76 @@ renderHeader('จัดการบัญชี');
   <?php else: ?>
     <div class="account-grid">
       <section class="card">
-        <h3 style="margin-bottom:14px">ข้อมูลบัญชี</h3>
-        <p style="color:var(--muted); margin-bottom:18px">Gmail จะถูกล็อกหลังบันทึก หากต้องการเปลี่ยนให้ลบอีเมลเดิมออกก่อน</p>
+        <h3 style="margin-bottom:14px"><?= htmlspecialchars(t('account_info')) ?></h3>
+        <p style="color:var(--muted); margin-bottom:18px"><?= htmlspecialchars(t('gmail_locked_note')) ?></p>
+        <div class="toolbar">
+          <button class="btn-add btn-ghost" type="button" data-modal-open="passwordModal"><?= htmlspecialchars(t('change_password')) ?></button>
+        </div>
 
         <div class="form-group">
-          <label>ชื่อผู้ใช้</label>
+          <label><?= htmlspecialchars(t('username')) ?></label>
           <input type="text" value="<?= htmlspecialchars($user['username']) ?>" disabled>
         </div>
 
         <?php if (!empty($user['gmail'])): ?>
           <div class="form-group">
-            <label>Gmail ที่ล็อกไว้</label>
+            <label><?= htmlspecialchars(t('locked_gmail')) ?></label>
             <div class="locked-field"><?= htmlspecialchars($user['gmail']) ?></div>
           </div>
-          <form method="POST" onsubmit="return confirm('ยืนยันลบ Gmail ออกจากบัญชี? หากไม่มี Gmail จะยืมหนังสือไม่ได้')">
+          <form method="POST" onsubmit="return confirm('<?= addslashes(htmlspecialchars(tt('ยืนยันลบ Gmail ออกจากบัญชี? หากไม่มี Gmail จะยืมหนังสือไม่ได้', 'Remove Gmail from this account? You cannot borrow books without Gmail.'))) ?>')">
             <input type="hidden" name="action" value="remove_gmail">
-            <button class="btn-add btn-ghost" type="submit">ลบ Gmail ออก</button>
+            <button class="btn-add btn-ghost" type="submit"><?= htmlspecialchars(t('remove_gmail')) ?></button>
           </form>
         <?php else: ?>
           <form method="POST">
             <input type="hidden" name="action" value="update_gmail">
             <div class="form-group">
-              <label for="gmail">เพิ่ม Gmail</label>
+              <label for="gmail"><?= htmlspecialchars(t('add_gmail')) ?></label>
               <input type="email" id="gmail" name="gmail" placeholder="name@gmail.com" required>
             </div>
-            <button class="btn-add" type="submit">บันทึกและล็อก Gmail</button>
+            <button class="btn-add" type="submit"><?= htmlspecialchars(t('save_lock_gmail')) ?></button>
           </form>
         <?php endif; ?>
 
         <div style="border-top:1px solid var(--border); margin-top:24px; padding-top:20px">
-          <h3 style="margin-bottom:10px; color:var(--danger)">ลบบัญชี</h3>
-          <p style="color:var(--muted); margin-bottom:14px">เปิด popup เพื่อยืนยันการลบบัญชีถาวร</p>
-          <button class="btn-add btn-danger" type="button" data-modal-open="deleteAccountModal">ลบบัญชีของฉัน</button>
+          <h3 style="margin-bottom:10px; color:var(--danger)"><?= htmlspecialchars(t('delete_account')) ?></h3>
+          <p style="color:var(--muted); margin-bottom:14px"><?= htmlspecialchars(t('delete_popup_note')) ?></p>
+          <button class="btn-add btn-danger" type="button" data-modal-open="deleteAccountModal"><?= htmlspecialchars(t('delete_my_account')) ?></button>
         </div>
       </section>
 
       <section class="card">
         <div class="toolbar">
-          <h3 style="margin:0; margin-right:auto">ประวัติการยืม</h3>
-          <a class="source-link" href="../books/index.php">กลับไปยืมหนังสือ</a>
+          <h3 style="margin:0; margin-right:auto"><?= htmlspecialchars(t('loan_history')) ?></h3>
+          <a class="source-link" href="../books/index.php"><?= htmlspecialchars(t('borrow_more')) ?></a>
         </div>
         <?php if (!$loans): ?>
-          <div class="empty">ยังไม่มีประวัติการยืม</div>
+          <div class="empty"><?= htmlspecialchars(t('empty_loans')) ?></div>
         <?php else: ?>
           <div class="loan-list">
             <?php foreach ($loans as $loan): ?>
               <?php $isActive = $loan['status'] === 'active' && strtotime($loan['due_at']) > time(); ?>
               <article class="loan-item">
-                <strong><?= htmlspecialchars($loan['title']) ?> <span class="mini-badge"><?= htmlspecialchars($loan['volume_label']) ?></span></strong>
+                <strong><?= htmlspecialchars($loan['title']) ?> <span class="mini-badge"><?= htmlspecialchars(localizeValue($loan['volume_label'])) ?></span></strong>
                 <div class="loan-meta">
-                  โดย <?= htmlspecialchars($loan['author']) ?> · <?= (int)$loan['duration_days'] ?> วัน · <?= htmlspecialchars($loan['source'] ?: 'Local') ?>
-                  · <?= $loan['email_sent_at'] ? 'ส่งอีเมลแล้ว' : 'รอระบบอีเมล' ?>
+                  <?= htmlspecialchars(t('by_author')) ?> <?= htmlspecialchars($loan['author']) ?> · <?= (int)$loan['duration_days'] ?> <?= htmlspecialchars(t((int)$loan['duration_days'] === 1 ? 'day' : 'days')) ?> · <?= htmlspecialchars(localizeValue($loan['source'] ?: 'Local')) ?>
                 </div>
                 <?php if ($isActive): ?>
-                  <div>เหลือเวลา <span class="countdown" data-due="<?= htmlspecialchars($loan['due_at']) ?>"></span></div>
+                  <div><?= htmlspecialchars(t('time_left')) ?> <span class="countdown" data-due="<?= htmlspecialchars($loan['due_at']) ?>"></span></div>
                   <div class="loan-actions">
                     <form method="POST" action="../books/loan_action.php">
                       <input type="hidden" name="loan_id" value="<?= (int)$loan['id'] ?>">
                       <input type="hidden" name="action" value="return">
-                      <button class="btn-sm btn-ghost" type="submit">คืนหนังสือ</button>
+                      <button class="btn-sm btn-ghost" type="submit"><?= htmlspecialchars(t('return_book')) ?></button>
                     </form>
                     <form method="POST" action="../books/loan_action.php">
                       <input type="hidden" name="loan_id" value="<?= (int)$loan['id'] ?>">
                       <input type="hidden" name="action" value="cancel">
-                      <button class="btn-sm btn-danger" type="submit" onclick="return confirm('ยืนยันยกเลิกการยืมรายการนี้?')">ยกเลิกยืม</button>
+                      <button class="btn-sm btn-danger" type="submit" onclick="return confirm('<?= addslashes(htmlspecialchars(tt('ยืนยันยกเลิกการยืมรายการนี้?', 'Cancel this loan?'))) ?>')"><?= htmlspecialchars(t('cancel_borrow')) ?></button>
                     </form>
                   </div>
                 <?php else: ?>
-                  <div style="color:var(--muted)">สถานะ: <?= htmlspecialchars($loan['status']) ?> · กำหนดคืน <?= htmlspecialchars($loan['due_at']) ?></div>
+                  <div style="color:var(--muted)"><?= htmlspecialchars(t('status')) ?>: <?= htmlspecialchars(localizeValue($loan['status'])) ?> · <?= htmlspecialchars(t('due_at')) ?> <?= htmlspecialchars($loan['due_at']) ?></div>
                 <?php endif; ?>
               </article>
             <?php endforeach; ?>
@@ -292,24 +292,24 @@ renderHeader('จัดการบัญชี');
 
 <div class="modal-backdrop" id="passwordModal">
   <div class="modal">
-    <h3>เปลี่ยนรหัสผ่าน</h3>
+    <h3><?= htmlspecialchars(t('change_password')) ?></h3>
     <form method="POST">
       <input type="hidden" name="action" value="change_password">
       <div class="form-group">
-        <label>รหัสผ่านเก่า</label>
+        <label><?= htmlspecialchars(t('old_password')) ?></label>
         <input type="password" name="old_password" required>
       </div>
       <div class="form-group">
-        <label>รหัสผ่านใหม่</label>
+        <label><?= htmlspecialchars(t('new_password')) ?></label>
         <input type="password" name="new_password" minlength="6" required>
       </div>
       <div class="form-group">
-        <label>ยืนยันรหัสผ่านใหม่</label>
+        <label><?= htmlspecialchars(t('confirm_new_password')) ?></label>
         <input type="password" name="confirm_password" minlength="6" required>
       </div>
       <div class="modal-actions">
-        <button class="btn-add btn-ghost" type="button" data-modal-close>ยกเลิก</button>
-        <button class="btn-add" type="submit">เปลี่ยนรหัสผ่าน</button>
+        <button class="btn-add btn-ghost" type="button" data-modal-close><?= htmlspecialchars(t('cancel')) ?></button>
+        <button class="btn-add" type="submit"><?= htmlspecialchars(t('change_password')) ?></button>
       </div>
     </form>
   </div>
@@ -317,17 +317,17 @@ renderHeader('จัดการบัญชี');
 
 <div class="modal-backdrop" id="deleteAccountModal">
   <div class="modal">
-    <h3 style="color:var(--danger)">ยืนยันลบบัญชี</h3>
-    <p style="color:var(--muted); margin-bottom:16px">บัญชีและประวัติการยืมทั้งหมดจะถูกลบถาวร</p>
+    <h3 style="color:var(--danger)"><?= htmlspecialchars(t('confirm_delete_account')) ?></h3>
+    <p style="color:var(--muted); margin-bottom:16px"><?= htmlspecialchars(t('delete_account_warning')) ?></p>
     <form method="POST">
       <input type="hidden" name="action" value="delete_self">
       <div class="form-group">
-        <label>พิมพ์ DELETE เพื่อยืนยัน</label>
+        <label><?= htmlspecialchars(t('type_delete')) ?></label>
         <input type="text" name="confirm_text" placeholder="DELETE" required>
       </div>
       <div class="modal-actions">
-        <button class="btn-add btn-ghost" type="button" data-modal-close>ยกเลิก</button>
-        <button class="btn-add btn-danger" type="submit">ลบบัญชีถาวร</button>
+        <button class="btn-add btn-ghost" type="button" data-modal-close><?= htmlspecialchars(t('cancel')) ?></button>
+        <button class="btn-add btn-danger" type="submit"><?= htmlspecialchars(t('delete_permanently')) ?></button>
       </div>
     </form>
   </div>
@@ -355,14 +355,14 @@ renderHeader('จัดการบัญชี');
       var due = new Date(node.dataset.due.replace(' ', 'T')).getTime();
       var diff = due - Date.now();
       if (diff <= 0) {
-        node.textContent = 'หมดเวลาแล้ว';
+        node.textContent = <?= json_encode(t('expired'), JSON_UNESCAPED_UNICODE) ?>;
         return;
       }
       var days = Math.floor(diff / 86400000);
       var hours = Math.floor((diff % 86400000) / 3600000);
       var minutes = Math.floor((diff % 3600000) / 60000);
       var seconds = Math.floor((diff % 60000) / 1000);
-      node.textContent = days + ' วัน ' + hours + ' ชม. ' + minutes + ' นาที ' + seconds + ' วิ';
+      node.textContent = days + ' <?= addslashes(t('days')) ?> ' + hours + ' <?= addslashes(t('hour_short')) ?> ' + minutes + ' <?= addslashes(t('minute')) ?> ' + seconds + ' <?= addslashes(t('second')) ?>';
     });
   }
   updateCountdowns();

@@ -24,7 +24,7 @@ if ($id > 0) {
     if ($book) {
         $del = $pdo->prepare("DELETE FROM books WHERE id = ?");
         $del->execute([$id]);
-        $_SESSION['flash'] = 'ลบหนังสือ "' . $book['title'] . '" เรียบร้อยแล้ว';
+        $_SESSION['flash'] = tt('ลบหนังสือ', 'Deleted book') . ' "' . $book['title'] . '" ' . tt('เรียบร้อยแล้ว', 'successfully.');
     }
 }
 

@@ -4,6 +4,7 @@ if (isset($_SESSION['user_id'])) {
     header('Location: ../books/index.php'); exit;
 }
 require_once '../config/db.php';
+require_once '../includes/i18n.php';
 
 $errors = [];
 $success = '';
@@ -13,34 +14,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     $confirm  = $_POST['confirm'] ?? '';
 
-    if (!$username)              $errors[] = 'กรุณากรอกชื่อผู้ใช้';
-    elseif (strlen($username) < 3) $errors[] = 'ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร';
+    if (!$username)              $errors[] = tt('กรุณากรอกชื่อผู้ใช้', 'Please enter a username.');
+    elseif (strlen($username) < 3) $errors[] = tt('ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร', 'Username must be at least 3 characters.');
 
-    if (!$password)              $errors[] = 'กรุณากรอกรหัสผ่าน';
-    elseif (strlen($password) < 6) $errors[] = 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
-    elseif ($password !== $confirm) $errors[] = 'รหัสผ่านไม่ตรงกัน';
+    if (!$password)              $errors[] = tt('กรุณากรอกรหัสผ่าน', 'Please enter a password.');
+    elseif (strlen($password) < 6) $errors[] = tt('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร', 'Password must be at least 6 characters.');
+    elseif ($password !== $confirm) $errors[] = tt('รหัสผ่านไม่ตรงกัน', 'Passwords do not match.');
 
     if (empty($errors)) {
         $pdo = getDB();
         $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
         $stmt->execute([$username]);
         if ($stmt->fetch()) {
-            $errors[] = 'ชื่อผู้ใช้นี้ถูกใช้งานแล้ว';
+            $errors[] = tt('ชื่อผู้ใช้นี้ถูกใช้งานแล้ว', 'This username is already taken.');
         } else {
             $hash = password_hash($password, PASSWORD_DEFAULT);
             $ins  = $pdo->prepare("INSERT INTO users (username, password) VALUES (?, ?)");
             $ins->execute([$username, $hash]);
-            $success = 'สมัครบัญชีสำเร็จ! กรุณาเข้าสู่ระบบ';
+            $success = tt('สมัครบัญชีสำเร็จ! กรุณาเข้าสู่ระบบ', 'Account created. Please log in.');
         }
     }
 }
 ?>
 <!DOCTYPE html>
-<html lang="th">
+<html lang="<?= htmlspecialchars(appLang()) ?>">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>สมัครบัญชี — Book Manager</title>
+<title><?= htmlspecialchars(t('register')) ?> - Book Manager</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Sarabun:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root { --ink: #1a1208; --paper: #f5f0e8; --cream: #ede8dc; --accent: #8b4513; --accent-light: #c4763a; --muted: #7a6e5f; --border: #cfc8b8; --danger: #c0392b; --success: #27ae60; }
@@ -59,12 +60,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   .success { background: #eafaf1; border: 1px solid #a9dfbf; color: var(--success); border-radius: 3px; padding: 10px 14px; margin-bottom: 20px; font-size: .9rem; }
   .hint { margin-top: 20px; text-align: center; color: var(--muted); font-size: .85rem; }
   .hint a { color: var(--accent); text-decoration: none; }
+  .lang-switch { position: fixed; top: 18px; right: 18px; display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--border); border-radius: 999px; background: #fff; box-shadow: 0 8px 20px rgba(26,18,8,.12); }
+  .lang-switch a { color: var(--accent); text-decoration: none; font-size: .75rem; font-weight: 700; padding: 7px 10px; border-radius: 999px; }
+  .lang-switch a.active { color: #fff; background: var(--accent); }
 </style>
 </head>
 <body>
+<?php renderLanguageSwitch(); ?>
 <div class="card">
-  <h1>📚 Book Manager</h1>
-  <p class="subtitle">สมัครบัญชีใหม่</p>
+  <h1>Book Manager</h1>
+  <p class="subtitle"><?= htmlspecialchars(t('register_subtitle')) ?></p>
 
   <?php if ($errors): ?>
     <div class="error"><?= implode('<br>', array_map('htmlspecialchars', $errors)) ?></div>
@@ -74,15 +79,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <?php endif; ?>
 
   <form method="POST">
-    <label>ชื่อผู้ใช้</label>
-    <input type="text" name="username" value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" placeholder="อย่างน้อย 3 ตัวอักษร">
-    <label>รหัสผ่าน</label>
-    <input type="password" name="password" placeholder="อย่างน้อย 6 ตัวอักษร">
-    <label>ยืนยันรหัสผ่าน</label>
-    <input type="password" name="confirm" placeholder="กรอกรหัสผ่านอีกครั้ง">
-    <button type="submit" class="btn">สมัครบัญชี</button>
+    <label><?= htmlspecialchars(t('username')) ?></label>
+    <input type="text" name="username" value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" placeholder="<?= htmlspecialchars(t('min_3_chars')) ?>">
+    <label><?= htmlspecialchars(t('password')) ?></label>
+    <input type="password" name="password" placeholder="<?= htmlspecialchars(t('min_6_chars')) ?>">
+    <label><?= htmlspecialchars(t('confirm_new_password')) ?></label>
+    <input type="password" name="confirm" placeholder="<?= htmlspecialchars(t('confirm_password_placeholder')) ?>">
+    <button type="submit" class="btn"><?= htmlspecialchars(t('register')) ?></button>
   </form>
-  <p class="hint">มีบัญชีแล้ว? <a href="login.php">เข้าสู่ระบบ</a></p>
+  <p class="hint"><?= htmlspecialchars(t('have_account')) ?> <a href="login.php"><?= htmlspecialchars(t('login')) ?></a></p>
 </div>
 </body>
 </html>

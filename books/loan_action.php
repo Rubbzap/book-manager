@@ -16,7 +16,7 @@ $action = $_POST['action'] ?? '';
 $allowed = ['return' => 'returned', 'cancel' => 'cancelled'];
 
 if ($loanId <= 0 || !isset($allowed[$action])) {
-    $_SESSION['flash'] = 'ข้อมูลรายการยืมไม่ถูกต้อง';
+    $_SESSION['flash'] = tt('ข้อมูลรายการยืมไม่ถูกต้อง', 'Invalid loan record.');
     header('Location: ../auth/account.php');
     exit;
 }
@@ -28,7 +28,9 @@ $stmt = $pdo->prepare(
 );
 $stmt->execute([$allowed[$action], $loanId, $_SESSION['user_id']]);
 
-$_SESSION['flash'] = $action === 'return' ? 'คืนหนังสือเรียบร้อยแล้ว' : 'ยกเลิกการยืมเรียบร้อยแล้ว';
+$_SESSION['flash'] = $action === 'return'
+    ? tt('คืนหนังสือเรียบร้อยแล้ว', 'Book returned successfully.')
+    : tt('ยกเลิกการยืมเรียบร้อยแล้ว', 'Loan cancelled successfully.');
 $back = $_POST['back'] ?? '../auth/account.php';
 header('Location: ' . ($back === 'index' ? 'index.php' : '../auth/account.php'));
 exit;

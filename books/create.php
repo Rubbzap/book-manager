@@ -26,11 +26,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $data[$key] = trim($_POST[$key] ?? '');
     }
 
-    if ($data['title'] === '') $errors[] = 'กรุณากรอกชื่อหนังสือ';
-    if ($data['author'] === '') $errors[] = 'กรุณากรอกชื่อผู้แต่ง';
-    if ($data['category'] === '') $errors[] = 'กรุณากรอกหมวดหมู่';
+    if ($data['title'] === '') $errors[] = tt('กรุณากรอกชื่อหนังสือ', 'Please enter a book title.');
+    if ($data['author'] === '') $errors[] = tt('กรุณากรอกชื่อผู้แต่ง', 'Please enter an author.');
+    if ($data['category'] === '') $errors[] = tt('กรุณากรอกหมวดหมู่', 'Please enter a category.');
     if ($data['cover_image_url'] !== '' && !filter_var($data['cover_image_url'], FILTER_VALIDATE_URL)) {
-        $errors[] = 'URL รูปปกไม่ถูกต้อง';
+        $errors[] = tt('URL รูปปกไม่ถูกต้อง', 'The cover image URL is invalid.');
     }
 
     if (!$errors) {
@@ -51,25 +51,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $coverUrl,
         ]);
 
-        $_SESSION['flash'] = 'เพิ่มหนังสือ "' . $data['title'] . '" เรียบร้อยแล้ว';
+        $_SESSION['flash'] = tt('เพิ่มหนังสือ', 'Added book') . ' "' . $data['title'] . '" ' . tt('เรียบร้อยแล้ว', 'successfully.');
         header('Location: index.php');
         exit;
     }
 }
 
-renderHeader('เพิ่มหนังสือใหม่');
+renderHeader(t('add_new_book'));
 ?>
 </head>
 <body>
 <nav>
   <a class="nav-brand" href="index.php"><span class="logo-mark">B</span> BookShelf</a>
   <span class="nav-user"><?= htmlspecialchars($_SESSION['username']) ?></span>
-  <a class="nav-link" href="index.php">กลับ</a>
-  <a class="nav-link" href="../auth/logout.php">ออกจากระบบ</a>
+  <?php renderLanguageSwitch(); ?>
+  <a class="nav-link" href="index.php"><?= htmlspecialchars(t('back')) ?></a>
+  <a class="nav-link" href="../auth/logout.php"><?= htmlspecialchars(t('logout')) ?></a>
 </nav>
 
 <div class="container">
-  <h2>เพิ่มหนังสือใหม่</h2>
+  <h2><?= htmlspecialchars(t('add_new_book')) ?></h2>
 
   <?php if ($errors): ?>
     <div class="alert alert-error"><?= implode('<br>', array_map('htmlspecialchars', $errors)) ?></div>
@@ -78,42 +79,42 @@ renderHeader('เพิ่มหนังสือใหม่');
   <div class="card" style="max-width:720px">
     <form method="POST">
       <div class="form-group">
-        <label for="title">ชื่อหนังสือ *</label>
-        <input type="text" id="title" name="title" value="<?= htmlspecialchars($data['title']) ?>" placeholder="เช่น Harry Potter">
+        <label for="title"><?= htmlspecialchars(t('required_title')) ?></label>
+        <input type="text" id="title" name="title" value="<?= htmlspecialchars($data['title']) ?>" placeholder="<?= htmlspecialchars(tt('เช่น Harry Potter', 'e.g. Harry Potter')) ?>">
       </div>
 
       <div class="form-group">
-        <label for="author">ผู้แต่ง *</label>
-        <input type="text" id="author" name="author" value="<?= htmlspecialchars($data['author']) ?>" placeholder="เช่น J.K. Rowling">
+        <label for="author"><?= htmlspecialchars(t('required_author')) ?></label>
+        <input type="text" id="author" name="author" value="<?= htmlspecialchars($data['author']) ?>" placeholder="<?= htmlspecialchars(tt('เช่น J.K. Rowling', 'e.g. J.K. Rowling')) ?>">
       </div>
 
       <div style="display:flex; gap:16px;">
         <div class="form-group" style="flex:2">
-          <label for="category">หมวดหมู่ *</label>
-          <input type="text" id="category" name="category" value="<?= htmlspecialchars($data['category']) ?>" placeholder="เช่น มังงะ, ธุรกิจ, นิยาย">
+          <label for="category"><?= htmlspecialchars(t('required_category')) ?></label>
+          <input type="text" id="category" name="category" value="<?= htmlspecialchars($data['category']) ?>" placeholder="<?= htmlspecialchars(tt('เช่น มังงะ, ธุรกิจ, นิยาย', 'e.g. Manga, Business, Fiction')) ?>">
         </div>
         <div class="form-group" style="flex:1">
-          <label for="year">ปีพิมพ์</label>
+          <label for="year"><?= htmlspecialchars(t('year')) ?></label>
           <input type="number" id="year" name="year" value="<?= htmlspecialchars($data['year']) ?>" placeholder="2026" min="1800" max="2100">
         </div>
       </div>
 
       <div class="form-group">
-        <label for="description">คำอธิบาย</label>
-        <textarea id="description" name="description" placeholder="สรุปเนื้อหาหรือบันทึกย่อ..."><?= htmlspecialchars($data['description']) ?></textarea>
+        <label for="description"><?= htmlspecialchars(t('description')) ?></label>
+        <textarea id="description" name="description" placeholder="<?= htmlspecialchars(tt('สรุปเนื้อหาหรือบันทึกย่อ...', 'Short summary or notes...')) ?>"><?= htmlspecialchars($data['description']) ?></textarea>
       </div>
 
       <div class="form-group">
-        <label for="cover_image_url">URL รูปปกหนังสือ</label>
+        <label for="cover_image_url"><?= htmlspecialchars(t('cover_url')) ?></label>
         <input type="text" id="cover_image_url" name="cover_image_url" value="<?= htmlspecialchars($data['cover_image_url']) ?>" placeholder="https://example.com/book-cover.jpg">
-        <small style="color:var(--muted)">วางลิงก์รูปปกจริงจากเว็บต้นทางหรือ CDN ถ้าไม่ใส่ ระบบจะสร้างปกสำรองให้</small>
+        <small style="color:var(--muted)"><?= htmlspecialchars(t('cover_note_create')) ?></small>
       </div>
 
-      <img id="cover-preview" src="" alt="ตัวอย่างปก" style="display:none; width:96px; height:136px; object-fit:cover; border-radius:8px; margin-bottom:18px; box-shadow:0 10px 24px rgba(0,0,0,.16)">
+      <img id="cover-preview" src="" alt="<?= htmlspecialchars(t('cover_preview')) ?>" style="display:none; width:96px; height:136px; object-fit:cover; border-radius:8px; margin-bottom:18px; box-shadow:0 10px 24px rgba(0,0,0,.16)">
 
       <div style="display:flex; gap:12px; align-items:center">
-        <button type="submit" class="btn-add">บันทึก</button>
-        <a href="index.php" style="color:var(--muted); text-decoration:none; font-size:.9rem">ยกเลิก</a>
+        <button type="submit" class="btn-add"><?= htmlspecialchars(t('save')) ?></button>
+        <a href="index.php" style="color:var(--muted); text-decoration:none; font-size:.9rem"><?= htmlspecialchars(t('cancel')) ?></a>
       </div>
     </form>
   </div>

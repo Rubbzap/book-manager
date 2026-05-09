@@ -37,7 +37,6 @@ CREATE TABLE IF NOT EXISTS loans (
     due_at DATETIME NOT NULL,
     returned_at DATETIME NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'active',
-    email_sent_at DATETIME NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_loans_user (user_id),
     INDEX idx_loans_book (book_id),

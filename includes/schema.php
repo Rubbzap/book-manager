@@ -51,7 +51,6 @@ function ensureAppSchema(PDO $pdo): void {
                 due_at DATETIME NOT NULL,
                 returned_at DATETIME NULL,
                 status VARCHAR(20) NOT NULL DEFAULT 'active',
-                email_sent_at DATETIME NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_loans_user (user_id),
                 INDEX idx_loans_book (book_id),
@@ -63,12 +62,10 @@ function ensureAppSchema(PDO $pdo): void {
         if (!columnExists($pdo, 'loans', 'volume_label')) {
             $pdo->exec("ALTER TABLE loans ADD COLUMN volume_label VARCHAR(80) NOT NULL DEFAULT 'เล่มเดียว' AFTER book_id");
         }
-        if (!columnExists($pdo, 'loans', 'email_sent_at')) {
-            $pdo->exec("ALTER TABLE loans ADD COLUMN email_sent_at DATETIME NULL AFTER status");
-        }
     }
 
     seedExternalBooks($pdo);
+    replaceLegacyLocalBooks($pdo);
     backfillBookCovers($pdo);
 }
 
@@ -76,7 +73,10 @@ function bookSourceUrl(string $source, string $title): string {
     if ($source === 'meb') {
         return 'https://www.mebmarket.com/index.php?action=search_book&type=all&search=' . rawurlencode($title);
     }
-    return 'https://www.naiin.com/search?keyword=' . rawurlencode($title);
+    if ($source === 'นายอินทร์') {
+        return 'https://www.google.com/search?q=' . rawurlencode('site:naiin.com ' . $title);
+    }
+    return 'https://www.google.com/search?q=' . rawurlencode($title);
 }
 
 function bookCoverImageUrl(string $title, string $author, string $coverColor): string {
@@ -92,6 +92,91 @@ function backfillBookCovers(PDO $pdo): void {
         $update->execute([
             bookCoverImageUrl($book['title'], $book['author'], $book['cover_color'] ?: '#8b4513'),
             $book['id'],
+        ]);
+    }
+}
+
+function replaceLegacyLocalBooks(PDO $pdo): void {
+    $books = [
+        [
+            'old_title' => 'มนุษย์ต่างดาวในสวน',
+            'title' => 'The War of the Worlds',
+            'author' => 'H. G. Wells',
+            'category' => "\u{0e19}\u{0e34}\u{0e22}\u{0e32}\u{0e22}\u{0e44}\u{0e0b}\u{0e44}\u{0e1f}",
+            'year' => 1898,
+            'description' => 'A classic science fiction novel about a Martian invasion of Earth, widely recognized as an early landmark of alien-invasion fiction.',
+            'source' => 'Open Library',
+            'source_url' => 'https://openlibrary.org/works/OL52114W/The_War_of_the_Worlds',
+            'cover_color' => '#6a040f',
+            'language' => "\u{0e2d}\u{0e31}\u{0e07}\u{0e01}\u{0e24}\u{0e29}",
+            'format' => "\u{0e2b}\u{0e19}\u{0e31}\u{0e07}\u{0e2a}\u{0e37}\u{0e2d}",
+            'volume_options' => json_encode(["\u{0e40}\u{0e25}\u{0e48}\u{0e21}\u{0e40}\u{0e14}\u{0e35}\u{0e22}\u{0e27}"], JSON_UNESCAPED_UNICODE),
+            'cover_image_url' => 'https://covers.openlibrary.org/b/olid/OL1004006M-L.jpg',
+        ],
+        [
+            'old_title' => 'โลกใบเล็กของซาลาวี',
+            'title' => 'The Alchemist',
+            'author' => 'Paulo Coelho',
+            'category' => "\u{0e19}\u{0e27}\u{0e19}\u{0e34}\u{0e22}\u{0e32}\u{0e22}",
+            'year' => 1988,
+            'description' => 'A modern allegorical novel following Santiago, a shepherd who travels in search of treasure and a deeper sense of purpose.',
+            'source' => 'Open Library',
+            'source_url' => 'https://openlibrary.org/works/OL42604423W/The_Alchemist',
+            'cover_color' => '#bc6c25',
+            'language' => "\u{0e2d}\u{0e31}\u{0e07}\u{0e01}\u{0e24}\u{0e29}",
+            'format' => "\u{0e2b}\u{0e19}\u{0e31}\u{0e07}\u{0e2a}\u{0e37}\u{0e2d}",
+            'volume_options' => json_encode(["\u{0e40}\u{0e25}\u{0e48}\u{0e21}\u{0e40}\u{0e14}\u{0e35}\u{0e22}\u{0e27}"], JSON_UNESCAPED_UNICODE),
+            'cover_image_url' => 'https://covers.openlibrary.org/b/olid/OL24647789M-L.jpg',
+        ],
+        [
+            'old_title' => 'ประวัติศาสตร์ไทย',
+            'title' => 'A History of Thailand',
+            'author' => 'Chris Baker, Pasuk Phongpaichit',
+            'category' => "\u{0e1b}\u{0e23}\u{0e30}\u{0e27}\u{0e31}\u{0e15}\u{0e34}\u{0e28}\u{0e32}\u{0e2a}\u{0e15}\u{0e23}\u{0e4c}",
+            'year' => 2005,
+            'description' => 'A readable academic history of Thailand covering political, economic, social, and cultural change from early kingdoms to the modern era.',
+            'source' => 'Cambridge University Press',
+            'source_url' => 'https://www.cambridge.org/core/books/history-of-thailand/history-of-thailand/1585D0A7E31B8B168F92729510BC2732',
+            'cover_color' => '#1d3557',
+            'language' => "\u{0e2d}\u{0e31}\u{0e07}\u{0e01}\u{0e24}\u{0e29}",
+            'format' => "\u{0e2b}\u{0e19}\u{0e31}\u{0e07}\u{0e2a}\u{0e37}\u{0e2d}",
+            'volume_options' => json_encode(["\u{0e40}\u{0e25}\u{0e48}\u{0e21}\u{0e40}\u{0e14}\u{0e35}\u{0e22}\u{0e27}"], JSON_UNESCAPED_UNICODE),
+            'cover_image_url' => 'https://covers.openlibrary.org/b/isbn/9781009014830-L.jpg',
+        ],
+    ];
+
+    $update = $pdo->prepare(
+        "UPDATE books
+         SET title = ?,
+             author = ?,
+             category = ?,
+             year = ?,
+             description = ?,
+             source = ?,
+             source_url = ?,
+             cover_color = ?,
+             language = ?,
+             format = ?,
+             volume_options = ?,
+             cover_image_url = ?
+         WHERE title = ? AND source = 'Local'"
+    );
+
+    foreach ($books as $book) {
+        $update->execute([
+            $book['title'],
+            $book['author'],
+            $book['category'],
+            $book['year'],
+            $book['description'],
+            $book['source'],
+            $book['source_url'],
+            $book['cover_color'],
+            $book['language'],
+            $book['format'],
+            $book['volume_options'],
+            $book['cover_image_url'],
+            $book['old_title'],
         ]);
     }
 }

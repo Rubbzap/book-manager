@@ -8,7 +8,6 @@ services:
       - .:/var/www/html
     depends_on:
       - mysql
-      - mailpit
 
   mysql:
     image: mysql:8.0
@@ -30,12 +29,6 @@ services:
       PMA_PASSWORD: secret
     depends_on:
       - mysql
-
-  mailpit:
-    image: axllent/mailpit:latest
-    ports:
-      - "8025:8025"
-      - "1025:1025"
 
 volumes:
   db_data:

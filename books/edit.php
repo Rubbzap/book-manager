@@ -30,11 +30,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $data[$field] = trim($_POST[$field] ?? '');
     }
 
-    if ($data['title'] === '') $errors[] = 'กรุณากรอกชื่อหนังสือ';
-    if ($data['author'] === '') $errors[] = 'กรุณากรอกชื่อผู้แต่ง';
-    if ($data['category'] === '') $errors[] = 'กรุณากรอกหมวดหมู่';
+    if ($data['title'] === '') $errors[] = tt('กรุณากรอกชื่อหนังสือ', 'Please enter a book title.');
+    if ($data['author'] === '') $errors[] = tt('กรุณากรอกชื่อผู้แต่ง', 'Please enter an author.');
+    if ($data['category'] === '') $errors[] = tt('กรุณากรอกหมวดหมู่', 'Please enter a category.');
     if ($data['cover_image_url'] !== '' && !filter_var($data['cover_image_url'], FILTER_VALIDATE_URL)) {
-        $errors[] = 'URL รูปปกไม่ถูกต้อง';
+        $errors[] = tt('URL รูปปกไม่ถูกต้อง', 'The cover image URL is invalid.');
     }
 
     if (!$errors) {
@@ -57,25 +57,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id,
         ]);
 
-        $_SESSION['flash'] = 'แก้ไขหนังสือ "' . $data['title'] . '" เรียบร้อยแล้ว';
+        $_SESSION['flash'] = tt('แก้ไขหนังสือ', 'Updated book') . ' "' . $data['title'] . '" ' . tt('เรียบร้อยแล้ว', 'successfully.');
         header('Location: index.php');
         exit;
     }
 }
 
-renderHeader('แก้ไขหนังสือ');
+renderHeader(t('edit_book'));
 ?>
 </head>
 <body>
 <nav>
   <a class="nav-brand" href="index.php"><span class="logo-mark">B</span> BookShelf</a>
   <span class="nav-user"><?= htmlspecialchars($_SESSION['username']) ?></span>
-  <a class="nav-link" href="index.php">กลับ</a>
-  <a class="nav-link" href="../auth/logout.php">ออกจากระบบ</a>
+  <?php renderLanguageSwitch(); ?>
+  <a class="nav-link" href="index.php"><?= htmlspecialchars(t('back')) ?></a>
+  <a class="nav-link" href="../auth/logout.php"><?= htmlspecialchars(t('logout')) ?></a>
 </nav>
 
 <div class="container">
-  <h2>แก้ไขหนังสือ</h2>
+  <h2><?= htmlspecialchars(t('edit_book')) ?></h2>
 
   <?php if ($errors): ?>
     <div class="alert alert-error"><?= implode('<br>', array_map('htmlspecialchars', $errors)) ?></div>
@@ -84,42 +85,42 @@ renderHeader('แก้ไขหนังสือ');
   <div class="card" style="max-width:720px">
     <form method="POST">
       <div class="form-group">
-        <label for="title">ชื่อหนังสือ *</label>
+        <label for="title"><?= htmlspecialchars(t('required_title')) ?></label>
         <input type="text" id="title" name="title" value="<?= htmlspecialchars($data['title']) ?>">
       </div>
 
       <div class="form-group">
-        <label for="author">ผู้แต่ง *</label>
+        <label for="author"><?= htmlspecialchars(t('required_author')) ?></label>
         <input type="text" id="author" name="author" value="<?= htmlspecialchars($data['author']) ?>">
       </div>
 
       <div style="display:flex; gap:16px;">
         <div class="form-group" style="flex:2">
-          <label for="category">หมวดหมู่ *</label>
+          <label for="category"><?= htmlspecialchars(t('required_category')) ?></label>
           <input type="text" id="category" name="category" value="<?= htmlspecialchars($data['category']) ?>">
         </div>
         <div class="form-group" style="flex:1">
-          <label for="year">ปีพิมพ์</label>
+          <label for="year"><?= htmlspecialchars(t('year')) ?></label>
           <input type="number" id="year" name="year" value="<?= htmlspecialchars($data['year'] ?? '') ?>" min="1800" max="2100">
         </div>
       </div>
 
       <div class="form-group">
-        <label for="description">คำอธิบาย</label>
+        <label for="description"><?= htmlspecialchars(t('description')) ?></label>
         <textarea id="description" name="description"><?= htmlspecialchars($data['description'] ?? '') ?></textarea>
       </div>
 
       <div class="form-group">
-        <label for="cover_image_url">URL รูปปกหนังสือ</label>
+        <label for="cover_image_url"><?= htmlspecialchars(t('cover_url')) ?></label>
         <input type="text" id="cover_image_url" name="cover_image_url" value="<?= htmlspecialchars($data['cover_image_url'] ?? '') ?>" placeholder="https://example.com/book-cover.jpg">
-        <small style="color:var(--muted)">วางลิงก์รูปปกจริง ถ้าล้างช่องนี้ ระบบจะสร้างปกสำรองให้หลังบันทึก</small>
+        <small style="color:var(--muted)"><?= htmlspecialchars(t('cover_note_edit')) ?></small>
       </div>
 
-      <img id="cover-preview" src="" alt="ตัวอย่างปก" style="display:none; width:96px; height:136px; object-fit:cover; border-radius:8px; margin-bottom:18px; box-shadow:0 10px 24px rgba(0,0,0,.16)">
+      <img id="cover-preview" src="" alt="<?= htmlspecialchars(t('cover_preview')) ?>" style="display:none; width:96px; height:136px; object-fit:cover; border-radius:8px; margin-bottom:18px; box-shadow:0 10px 24px rgba(0,0,0,.16)">
 
       <div style="display:flex; gap:12px; align-items:center">
-        <button type="submit" class="btn-add">บันทึกการแก้ไข</button>
-        <a href="index.php" style="color:var(--muted); text-decoration:none; font-size:.9rem">ยกเลิก</a>
+        <button type="submit" class="btn-add"><?= htmlspecialchars(t('save_changes')) ?></button>
+        <a href="index.php" style="color:var(--muted); text-decoration:none; font-size:.9rem"><?= htmlspecialchars(t('cancel')) ?></a>
       </div>
     </form>
   </div>

@@ -2,7 +2,6 @@
 require_once '../includes/layout.php';
 require_once '../config/db.php';
 require_once '../includes/schema.php';
-require_once '../includes/mailer.php';
 
 $pdo = getDB();
 ensureAppSchema($pdo);
@@ -14,6 +13,7 @@ if (isAdmin() || $_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $bookId = (int)($_POST['book_id'] ?? 0);
 $durationDays = (int)($_POST['duration_days'] ?? 0);
+$durationHours = $durationDays * 24;
 $selectedVolumes = $_POST['volume_labels'] ?? [];
 if (!is_array($selectedVolumes)) {
     $selectedVolumes = [];
@@ -22,7 +22,7 @@ $selectedVolumes = array_values(array_unique(array_filter(array_map('trim', $sel
 $allowedDurations = [1, 3, 5, 7];
 
 if ($bookId <= 0 || !in_array($durationDays, $allowedDurations, true) || !$selectedVolumes) {
-    $_SESSION['flash'] = 'ข้อมูลการยืมไม่ถูกต้อง';
+    $_SESSION['flash'] = tt('ข้อมูลการยืมไม่ถูกต้อง', 'Invalid borrowing request.');
     header('Location: index.php');
     exit;
 }
@@ -32,7 +32,7 @@ $userStmt->execute([$_SESSION['user_id']]);
 $user = $userStmt->fetch();
 
 if (!$user || empty($user['gmail']) || strtolower(substr($user['gmail'], -10)) !== '@gmail.com') {
-    $_SESSION['flash'] = 'กรุณาเพิ่ม Gmail ก่อนยืมหนังสือ';
+    $_SESSION['flash'] = tt('กรุณาเพิ่ม Gmail ก่อนยืมหนังสือ', 'Please add Gmail before borrowing books.');
     header('Location: ../auth/account.php');
     exit;
 }
@@ -42,7 +42,7 @@ $bookStmt->execute([$bookId]);
 $book = $bookStmt->fetch();
 
 if (!$book) {
-    $_SESSION['flash'] = 'ไม่พบหนังสือที่ต้องการยืม';
+    $_SESSION['flash'] = tt('ไม่พบหนังสือที่ต้องการยืม', 'The requested book was not found.');
     header('Location: index.php');
     exit;
 }
@@ -54,7 +54,7 @@ if (!is_array($volumes) || !$volumes) {
 
 foreach ($selectedVolumes as $volumeLabel) {
     if (!in_array($volumeLabel, $volumes, true)) {
-        $_SESSION['flash'] = 'ไม่พบเล่มที่ต้องการยืม';
+        $_SESSION['flash'] = tt('ไม่พบเล่มที่ต้องการยืม', 'The selected volume was not found.');
         header('Location: index.php');
         exit;
     }
@@ -68,14 +68,11 @@ $activeStmt = $pdo->prepare(
 
 $insert = $pdo->prepare(
     "INSERT INTO loans (user_id, book_id, volume_label, duration_days, borrowed_at, due_at)
-     VALUES (?, ?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL ? DAY))"
+     VALUES (?, ?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL ? HOUR))"
 );
-$loanStmt = $pdo->prepare("SELECT due_at FROM loans WHERE id = ?");
-$emailUpdate = $pdo->prepare("UPDATE loans SET email_sent_at = NOW() WHERE id = ?");
 
 $borrowedVolumes = [];
 $skippedVolumes = [];
-$mailSentAny = false;
 
 foreach ($selectedVolumes as $volumeLabel) {
     $activeStmt->execute([$_SESSION['user_id'], $bookId, $volumeLabel]);
@@ -84,32 +81,20 @@ foreach ($selectedVolumes as $volumeLabel) {
         continue;
     }
 
-    $insert->execute([$_SESSION['user_id'], $bookId, $volumeLabel, $durationDays, $durationDays]);
-    $loanId = (int)$pdo->lastInsertId();
-
-    $loanStmt->execute([$loanId]);
-    $dueAt = (string)$loanStmt->fetchColumn();
-
-    $mailSent = sendBorrowEmail($user['gmail'], $user['username'], $book['title'], $volumeLabel, $durationDays, $dueAt);
-    if ($mailSent) {
-        $emailUpdate->execute([$loanId]);
-        $mailSentAny = true;
-    }
+    $insert->execute([$_SESSION['user_id'], $bookId, $volumeLabel, $durationDays, $durationHours]);
     $borrowedVolumes[] = $volumeLabel;
 }
 
 if (!$borrowedVolumes) {
-    $_SESSION['flash'] = 'เล่มที่เลือกกำลังถูกยืมอยู่แล้ว';
+    $_SESSION['flash'] = tt('เล่มที่เลือกกำลังถูกยืมอยู่แล้ว', 'The selected volumes are already borrowed.');
     header('Location: index.php');
     exit;
 }
 
-$_SESSION['flash'] = 'ยืม "' . $book['title'] . '" สำเร็จ: ' . implode(', ', $borrowedVolumes) . ' ระยะเวลา ' . $durationDays . ' วัน';
+$borrowedText = implode(', ', array_map('localizeValue', $borrowedVolumes));
+$_SESSION['flash'] = tt('ยืม', 'Borrowed') . ' "' . $book['title'] . '" ' . tt('สำเร็จ', 'successfully') . ': ' . $borrowedText . ' ' . tt('ระยะเวลา', 'for') . ' ' . $durationDays . ' ' . t($durationDays === 1 ? 'day' : 'days');
 if ($skippedVolumes) {
-    $_SESSION['flash'] .= ' (ข้ามเล่มที่ยืมอยู่แล้ว: ' . implode(', ', $skippedVolumes) . ')';
-}
-if (!$mailSentAny) {
-    $_SESSION['flash'] .= ' (ระบบพยายามส่งอีเมลแล้ว แต่เซิร์ฟเวอร์นี้ยังไม่ได้ตั้งค่า mail transport)';
+    $_SESSION['flash'] .= ' (' . tt('ข้ามเล่มที่ยืมอยู่แล้ว:', 'Skipped already borrowed volumes:') . ' ' . implode(', ', array_map('localizeValue', $skippedVolumes)) . ')';
 }
 
 header('Location: index.php');
