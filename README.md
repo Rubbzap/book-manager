@@ -50,3 +50,22 @@ MYSQLDATABASE=${{MySQL.MYSQLDATABASE}}
 ```
 
 After changing variables, redeploy the web service.
+
+## Seed a deployed database
+
+After connecting the web service to MySQL, run the deploy seed script once:
+
+```bash
+php scripts/deploy_seed.php
+```
+
+The script creates/updates the required tables, seeds the book catalog, and resets the default admin login:
+
+- Username: `admin`
+- Password: `admin1234`
+
+To choose a different admin password:
+
+```bash
+SEED_ADMIN_PASSWORD="your-new-password" php scripts/deploy_seed.php
+```
