@@ -19,6 +19,8 @@ function tableExists(PDO $pdo, string $table): bool {
 }
 
 function ensureAppSchema(PDO $pdo): void {
+    ensureBaseTables($pdo);
+
     if (!columnExists($pdo, 'users', 'gmail')) {
         $pdo->exec("ALTER TABLE users ADD COLUMN gmail VARCHAR(255) NULL AFTER password");
     }
@@ -67,6 +69,46 @@ function ensureAppSchema(PDO $pdo): void {
     seedExternalBooks($pdo);
     replaceLegacyLocalBooks($pdo);
     backfillBookCovers($pdo);
+}
+
+function ensureBaseTables(PDO $pdo): void {
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            username VARCHAR(50) NOT NULL UNIQUE,
+            password VARCHAR(255) NOT NULL,
+            gmail VARCHAR(255) NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+    );
+
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS books (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            title VARCHAR(255) NOT NULL,
+            author VARCHAR(255) NOT NULL,
+            category VARCHAR(100) NOT NULL,
+            year INT,
+            description TEXT,
+            source VARCHAR(40) NOT NULL DEFAULT 'Local',
+            source_url VARCHAR(600) NULL,
+            cover_color VARCHAR(20) NOT NULL DEFAULT '#8b4513',
+            language VARCHAR(30) NOT NULL DEFAULT 'ไทย',
+            format VARCHAR(40) NOT NULL DEFAULT 'หนังสือ',
+            volume_options TEXT NULL,
+            cover_image_url VARCHAR(700) NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+    );
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = 'admin'");
+    $stmt->execute();
+    if ((int)$stmt->fetchColumn() === 0) {
+        $hash = password_hash('admin1234', PASSWORD_DEFAULT);
+        $insert = $pdo->prepare("INSERT INTO users (username, password) VALUES ('admin', ?)");
+        $insert->execute([$hash]);
+    }
 }
 
 function bookSourceUrl(string $source, string $title): string {
