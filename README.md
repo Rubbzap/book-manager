@@ -30,3 +30,23 @@ git push -u origin main
 ```
 
 This project cannot run on GitHub Pages because it needs PHP and MySQL. Deploy it to a Docker-capable host such as Render, Railway, a VPS, or your own server.
+
+## Railway database variables
+
+Add a MySQL service in the same Railway project, then set the web service variables from the MySQL service:
+
+```text
+MYSQL_URL=${{MySQL.MYSQL_URL}}
+```
+
+If you prefer separate variables, set:
+
+```text
+MYSQLHOST=${{MySQL.MYSQLHOST}}
+MYSQLPORT=${{MySQL.MYSQLPORT}}
+MYSQLUSER=${{MySQL.MYSQLUSER}}
+MYSQLPASSWORD=${{MySQL.MYSQLPASSWORD}}
+MYSQLDATABASE=${{MySQL.MYSQLDATABASE}}
+```
+
+After changing variables, redeploy the web service.
