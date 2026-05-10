@@ -3,6 +3,7 @@
 session_start();
 require_once '../config/db.php';
 require_once '../includes/i18n.php';
+require_once '../includes/schema.php';
 
 if (isset($_SESSION['user_id'])) {
     header('Location: ../books/index.php');
@@ -17,6 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($username && $password) {
         $pdo = getDB();
+        ensureBaseTables($pdo);
+
         $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
         $stmt->execute([$username]);
         $user = $stmt->fetch();

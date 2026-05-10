@@ -5,6 +5,7 @@ if (isset($_SESSION['user_id'])) {
 }
 require_once '../config/db.php';
 require_once '../includes/i18n.php';
+require_once '../includes/schema.php';
 
 $errors = [];
 $success = '';
@@ -23,6 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         $pdo = getDB();
+        ensureBaseTables($pdo);
+
         $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
         $stmt->execute([$username]);
         if ($stmt->fetch()) {
